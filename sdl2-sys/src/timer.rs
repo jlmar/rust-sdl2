@@ -1,4 +1,3 @@
-use core::prelude::*;
 use libc::{uint32_t, uint64_t, c_void, c_int};
 
 //SDL_timer.h

@@ -1,9 +1,10 @@
 use std::hash::{Hash, Hasher};
-use std::num::ToPrimitive;
+use std::convert::From;
+use std::mem::transmute;
 
 use sys::keycode as ll;
 
-#[derive(PartialEq, Eq, FromPrimitive, Debug, Copy)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum KeyCode {
     Unknown            = ll::SDLK_UNKNOWN as isize,
     Backspace          = ll::SDLK_BACKSPACE as isize,
@@ -250,19 +251,8 @@ impl Hash for KeyCode {
     }
 }
 
-impl ToPrimitive for KeyCode {
-    #[inline]
-    fn to_i64(&self) -> Option<i64> {
-        Some(*self as i64)
-    }
-
-    #[inline]
-    fn to_u64(&self) -> Option<u64> {
-        Some(*self as u64)
-    }
-
-    #[inline]
-    fn to_int(&self) -> Option<isize> {
-        Some(*self as isize)
+impl From<i32> for KeyCode {
+    fn from(i: i32) -> KeyCode {
+        unsafe { transmute(i) }
     }
 }

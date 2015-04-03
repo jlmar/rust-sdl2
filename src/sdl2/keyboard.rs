@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::ffi::{CStr, CString, NulError};
-use std::num::FromPrimitive;
 use std::ptr;
 
 use keycode::KeyCode;
@@ -47,8 +46,7 @@ pub fn get_keyboard_state() -> HashMap<ScanCode, bool> {
 
     let mut current = 0;
     while current < raw.len() {
-        state.insert(FromPrimitive::from_isize(current as isize)
-                        .unwrap_or(ScanCode::Unknown),
+        state.insert(ScanCode::from(current as u32),
                      raw[current] == 1);
         current += 1;
     }
@@ -66,15 +64,13 @@ pub fn set_mod_state(flags: Mod) {
 
 pub fn get_key_from_scancode(scancode: ScanCode) -> KeyCode {
     unsafe {
-        FromPrimitive::from_isize(ll::SDL_GetKeyFromScancode(scancode as u32) as isize)
-            .unwrap_or(KeyCode::Unknown)
+        KeyCode::from(ll::SDL_GetKeyFromScancode(scancode as u32))
     }
 }
 
 pub fn get_scancode_from_key(key: KeyCode) -> ScanCode {
     unsafe {
-        FromPrimitive::from_isize(ll::SDL_GetScancodeFromKey(key as i32) as isize)
-            .unwrap_or(ScanCode::Unknown)
+        ScanCode::from(ll::SDL_GetScancodeFromKey(key as i32))
     }
 }
 
@@ -92,8 +88,7 @@ pub fn get_scancode_from_name(name: &str) -> Result<ScanCode, NulError> {
             Ok(s) => s.as_ptr(),
             Err(e) => return Err(e),
         };
-        Ok(FromPrimitive::from_isize(ll::SDL_GetScancodeFromName(name) as isize)
-            .unwrap_or(ScanCode::Unknown))
+        Ok(ScanCode::from(ll::SDL_GetScancodeFromName(name)))
     }
 }
 
@@ -111,8 +106,7 @@ pub fn get_key_from_name(name: &str) -> Result<KeyCode, NulError> {
             Ok(s) => s.as_ptr(),
             Err(e) => return Err(e),
         };
-        Ok(FromPrimitive::from_isize(ll::SDL_GetKeyFromName(name) as isize)
-            .unwrap_or(KeyCode::Unknown))
+        Ok(KeyCode::from(ll::SDL_GetKeyFromName(name)))
     }
 }
 

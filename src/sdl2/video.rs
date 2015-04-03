@@ -2,12 +2,12 @@ use libc::{c_int, c_float, uint32_t};
 use std::ffi::{CStr, CString, NulError};
 use std::ptr;
 use std::vec::Vec;
+use std::mem::transmute;
 
 use rect::Rect;
 use surface::Surface;
 use pixels;
 use SdlResult;
-use std::num::FromPrimitive;
 
 use get_error;
 
@@ -125,7 +125,7 @@ pub enum FullscreenType {
     FTDesktop = 0x00001001,
 }
 
-#[derive(PartialEq, Copy)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum WindowPos {
     PosUndefined,
     PosCentered,
@@ -256,7 +256,7 @@ impl Window {
     }
 
     pub fn get_window_pixel_format(&self) -> pixels::PixelFormatEnum {
-        unsafe{ FromPrimitive::from_u64(ll::SDL_GetWindowPixelFormat(self.raw) as u64).unwrap() }
+        unsafe{ transmute(ll::SDL_GetWindowPixelFormat(self.raw)) }
     }
 
     pub fn get_id(&self) -> u32 {
@@ -625,13 +625,19 @@ pub fn gl_extension_supported(extension: &str) -> Result<bool, NulError> {
 }
 
 pub fn gl_set_attribute(attr: GLAttr, value: i32) -> bool {
-    unsafe { ll::SDL_GL_SetAttribute(FromPrimitive::from_u64(attr as u64).unwrap(), value as c_int) == 0 }
+    unsafe {
+        let a: u8 = transmute(attr);
+        ll::SDL_GL_SetAttribute(transmute(a as u32), value as c_int) == 0
+    }
 }
 
 pub fn gl_get_attribute(attr: GLAttr) -> SdlResult<i32> {
     let out: c_int = 0;
 
-    let result = unsafe { ll::SDL_GL_GetAttribute(FromPrimitive::from_u64(attr as u64).unwrap(), &out) } == 0;
+    let result = unsafe {
+        let a: u8 = transmute(attr);
+        ll::SDL_GL_GetAttribute(transmute(a as u32), &out) == 0
+    };
     if result {
         Ok(out as i32)
     } else {

@@ -47,13 +47,13 @@ use pixels::PixelFormatEnum;
 use get_error;
 use SdlResult;
 use std::mem;
+use std::mem::transmute;
 use std::ptr;
 use libc::{c_int, uint32_t, c_double, c_void};
 use rect::Point;
 use rect::Rect;
-use std::cell::{RefCell, RefMut, BorrowState};
+use std::cell::{RefCell, RefMut};
 use std::ffi::CStr;
-use std::num::FromPrimitive;
 use std::vec::Vec;
 use std::marker::PhantomData;
 
@@ -65,7 +65,7 @@ pub enum RenderDriverIndex {
     Index(i32)
 }
 
-#[derive(Copy, Clone, PartialEq, FromPrimitive)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum TextureAccess {
     Static = ll::SDL_TEXTUREACCESS_STATIC as isize,
     Streaming = ll::SDL_TEXTUREACCESS_STREAMING as isize,
@@ -92,7 +92,7 @@ pub struct RendererInfo {
     pub max_texture_height: i32
 }
 
-#[derive(Copy, Clone, PartialEq, FromPrimitive)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum BlendMode {
     None = ll::SDL_BLENDMODE_NONE as isize,
     Blend = ll::SDL_BLENDMODE_BLEND as isize,
@@ -105,7 +105,7 @@ impl RendererInfo {
         let actual_flags = RendererFlags::from_bits(info.flags).unwrap();
 
         let texture_formats: Vec<pixels::PixelFormatEnum> = info.texture_formats[0..(info.num_texture_formats as usize)].iter().map(|&format| {
-            FromPrimitive::from_i64(format as i64).unwrap()
+            transmute(format)
         }).collect();
 
         RendererInfo {
@@ -266,10 +266,7 @@ impl Renderer {
     /// }
     /// ```
     pub fn drawer(&self) -> RenderDrawer {
-        match self.drawer_borrow.borrow_state() {
-            BorrowState::Unused => RenderDrawer::new(self.raw, self.drawer_borrow.borrow_mut()),
-            _ => panic!("Renderer drawer already borrowed")
-        }
+        RenderDrawer::new(self.raw, self.drawer_borrow.borrow_mut())
     }
 
     /// Unwraps the window or surface the rendering context was created from.
@@ -406,7 +403,7 @@ impl<'renderer> RenderDrawer<'renderer> {
 
     /// Sets the blend mode used for drawing operations (Fill and Line).
     pub fn set_blend_mode(&mut self, blend: BlendMode) {
-        let ret = unsafe { ll::SDL_SetRenderDrawBlendMode(self.raw, FromPrimitive::from_i64(blend as i64).unwrap()) };
+        let ret = unsafe { ll::SDL_SetRenderDrawBlendMode(self.raw, blend as i32) };
         // Should only fail on an invalid renderer
         if ret != 0 { panic!(get_error()) }
     }
@@ -417,7 +414,7 @@ impl<'renderer> RenderDrawer<'renderer> {
         let ret = unsafe { ll::SDL_GetRenderDrawBlendMode(self.raw, &blend) };
         // Should only fail on an invalid renderer
         if ret != 0 { panic!(get_error()) }
-        else { FromPrimitive::from_i64(blend as i64).unwrap() }
+        else { unsafe {transmute(blend as u8)} }
     }
 
     /// Clears the current rendering target with the drawing color.
@@ -862,7 +859,6 @@ pub struct Texture<'renderer> {
     _marker: PhantomData<&'renderer ()>
 }
 
-#[unsafe_destructor]
 impl<'renderer> Drop for Texture<'renderer> {
     fn drop(&mut self) {
         if self.owned {
@@ -886,11 +882,13 @@ impl<'renderer> Texture<'renderer> {
         if ret != 0 {
             panic!(get_error())
         } else {
-            TextureQuery {
-               format: FromPrimitive::from_i64(format as i64).unwrap(),
-               access: FromPrimitive::from_i64(access as i64).unwrap(),
-               width: width as i32,
-               height: height as i32
+            unsafe {
+                TextureQuery {
+                   format: transmute(format as i32),
+                   access: transmute(access as u8),
+                   width: width as i32,
+                   height: height as i32
+                }
             }
         }
     }
@@ -937,7 +935,7 @@ impl<'renderer> Texture<'renderer> {
 
     /// Sets the blend mode for a texture, used by `RenderDrawer::copy()`.
     pub fn set_blend_mode(&mut self, blend: BlendMode) {
-        let ret = unsafe { ll::SDL_SetTextureBlendMode(self.raw, FromPrimitive::from_i64(blend as i64).unwrap()) };
+        let ret = unsafe { ll::SDL_SetTextureBlendMode(self.raw, blend as i32) };
 
         if ret != 0 {
             panic!("Error setting blend: {}", get_error())
@@ -951,7 +949,7 @@ impl<'renderer> Texture<'renderer> {
 
         // Should only fail on an invalid texture
         if ret != 0 { panic!(get_error()) }
-        else { FromPrimitive::from_i64(blend as i64).unwrap() }
+        else { unsafe {transmute(blend as u8)} }
     }
 
     /// Updates the given texture rectangle with new pixel data.

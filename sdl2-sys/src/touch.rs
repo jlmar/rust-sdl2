@@ -5,7 +5,7 @@ pub type SDL_FingerID = int64_t;
 pub type SDL_Finger = Finger;
 pub type TouchDevice = SDL_TouchID;
 
-#[derive(PartialEq, Copy)]
+#[derive(PartialEq, Clone, Copy)]
 #[repr(C)]
 pub struct Finger {
     id: TouchDevice,

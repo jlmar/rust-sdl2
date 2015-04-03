@@ -1,4 +1,3 @@
-use core::prelude::*;
 use libc::{c_int, c_uint, c_void, uint8_t, uint32_t};
 use libc::{uint16_t, c_double, c_char};
 use super::rwops::SDL_RWops;
@@ -42,7 +41,7 @@ pub struct SDL_AudioSpec {
 pub type SDL_AudioFilter =
     Option<extern "C" fn (arg1: *const SDL_AudioCVT, arg2: SDL_AudioFormat)>;
 #[allow(dead_code, missing_copy_implementations, raw_pointer_derive)]
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct SDL_AudioCVT {
     pub needed: c_int,

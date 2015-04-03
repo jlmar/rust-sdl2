@@ -1,8 +1,6 @@
 #![crate_name = "sdl2"]
 #![crate_type = "lib"]
 
-#![feature(unsafe_destructor, optin_builtin_traits, std_misc, core)]
-
 extern crate libc;
 #[macro_use]
 extern crate bitflags;

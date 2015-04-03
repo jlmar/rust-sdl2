@@ -5,11 +5,12 @@ Event Handling
 use std::ffi::CStr;
 use std::mem;
 use libc::{c_int, c_void, uint32_t};
-use std::num::FromPrimitive;
 use std::ptr;
 use std::borrow::ToOwned;
 use std::iter::FromIterator;
-use std::marker::{NoCopy, PhantomData};
+use std::marker::PhantomData;
+use std::convert::From;
+use std::mem::transmute;
 
 use controller;
 use controller::{Axis, Button};
@@ -28,7 +29,7 @@ use SdlResult;
 use sys::event as ll;
 
 /// Types of events that can be delivered.
-#[derive(Copy, Clone, FromPrimitive)]
+#[derive(Copy, Clone)]
 #[repr(u32)]
 pub enum EventType {
     First = ll::SDL_FIRSTEVENT,
@@ -81,6 +82,12 @@ pub enum EventType {
 
     User = ll::SDL_USEREVENT,
     Last = ll::SDL_LASTEVENT,
+}
+
+impl From<u32> for EventType {
+    fn from(i: u32) -> EventType {
+        unsafe { transmute(i) }
+    }
 }
 
 #[derive(PartialEq, Copy, Clone, Debug)]
@@ -449,7 +456,7 @@ impl Event {
         };
 
         // if event type has not been defined, treat it as a UserEvent
-        let event_type: EventType = FromPrimitive::from_usize(raw_type as usize).unwrap_or(EventType::User);
+        let event_type = EventType::from(raw_type);
         unsafe { match event_type {
             EventType::Quit => {
                 let ref event = *raw.quit();
@@ -499,10 +506,8 @@ impl Event {
                 Event::KeyDown {
                     timestamp: event.timestamp,
                     window_id: event.windowID,
-                    keycode: FromPrimitive::from_i32(event.keysym.sym)
-                                 .unwrap_or(KeyCode::Unknown),
-                    scancode: FromPrimitive::from_u32(event.keysym.scancode)
-                                 .unwrap_or(ScanCode::Unknown),
+                    keycode: KeyCode::from(event.keysym.sym),
+                    scancode: ScanCode::from(event.keysym.scancode),
                     keymod: keyboard::Mod::from_bits(event.keysym._mod as SDL_Keymod).unwrap(),
                     repeat: event.repeat != 0
                 }
@@ -513,10 +518,8 @@ impl Event {
                 Event::KeyUp {
                     timestamp: event.timestamp,
                     window_id: event.windowID,
-                    keycode: FromPrimitive::from_i32(event.keysym.sym)
-                               .unwrap_or(KeyCode::Unknown),
-                    scancode: FromPrimitive::from_u32(event.keysym.scancode)
-                               .unwrap_or(ScanCode::Unknown),
+                    keycode: KeyCode::from(event.keysym.sym),
+                    scancode: ScanCode::from(event.keysym.scancode),
                     keymod: keyboard::Mod::from_bits(event.keysym._mod as SDL_Keymod).unwrap(),
                     repeat: event.repeat != 0
                 }
@@ -843,13 +846,8 @@ impl Event {
 
 /// A thread-safe type that encapsulates SDL event-pumping functions.
 pub struct EventPump<'sdl> {
-    _marker: NoCopy,
     _sdl: PhantomData<&'sdl ()>
 }
-
-/// Prevents the event pump from moving to other threads.
-/// SDL events can only be pumped on the main thread.
-impl<'sdl> !Send for EventPump<'sdl> {}
 
 impl<'sdl> EventPump<'sdl> {
     /// Polls for currently pending events.
@@ -936,7 +934,6 @@ impl<'sdl> EventPump<'sdl> {
     #[doc(hidden)]
     pub unsafe fn _unchecked_new<'a>() -> EventPump<'a> {
         EventPump {
-            _marker: NoCopy,
             _sdl: PhantomData
         }
     }

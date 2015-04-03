@@ -1,9 +1,10 @@
 use std::hash::{Hash, Hasher};
-use std::num::ToPrimitive;
+use std::convert::From;
+use std::mem::transmute;
 
 use sys::scancode as ll;
 
-#[derive(PartialEq, Eq, FromPrimitive, Debug, Copy)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum ScanCode {
     Unknown            = ll::SDL_SCANCODE_UNKNOWN as isize,
     A                  = ll::SDL_SCANCODE_A as isize,
@@ -256,19 +257,8 @@ impl Hash for ScanCode {
     }
 }
 
-impl ToPrimitive for ScanCode {
-    #[inline]
-    fn to_i64(&self) -> Option<i64> {
-        Some(*self as i64)
-    }
-
-    #[inline]
-    fn to_u64(&self) -> Option<u64> {
-        Some(*self as u64)
-    }
-
-    #[inline]
-    fn to_int(&self) -> Option<isize> {
-        Some(*self as isize)
+impl From<u32> for ScanCode {
+    fn from(i: u32) -> ScanCode {
+        unsafe { transmute(i as u16) }
     }
 }

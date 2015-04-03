@@ -255,7 +255,7 @@ impl Drop for Joystick {
 
 /// Wrapper around a SDL_JoystickGUID, a globally unique identifier
 /// for a joystick.
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 pub struct Guid {
     raw: ll::SDL_JoystickGUID,
 }
@@ -321,7 +321,7 @@ impl Display for Guid {
 /// combinations make sense: 5 for instance would mean up and down at
 /// the same time... To simplify things I turn it into an enum which
 /// is how the SDL2 docs present it anyway (using macros).
-#[derive(Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum HatState {
     Centered  = 0,
     Up        = 0x01,

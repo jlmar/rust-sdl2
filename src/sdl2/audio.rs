@@ -1,9 +1,9 @@
 //! Audio Functions
 use std::ffi::{CStr, CString};
-use std::num::FromPrimitive;
 use libc::{c_int, c_void, uint8_t};
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
+use std::mem::transmute;
 
 use get_error;
 use rwops::RWops;
@@ -33,7 +33,7 @@ pub const AUDIOS32SYS : AudioFormat = ll::AUDIO_S32SYS;
 pub const AUDIOF32SYS : AudioFormat = ll::AUDIO_F32SYS;
 
 #[repr(C)]
-#[derive(Copy, Clone, PartialEq, Hash, Debug, FromPrimitive)]
+#[derive(Copy, Clone, PartialEq, Hash, Debug)]
 pub enum AudioStatus {
     Stopped = ll::SDL_AUDIO_STOPPED as isize,
     Playing = ll::SDL_AUDIO_PLAYING as isize,
@@ -345,7 +345,7 @@ impl<CB> AudioDevice<CB> {
     pub fn get_status(&self) -> AudioStatus {
         unsafe {
             let status = ll::SDL_GetAudioDeviceStatus(self.device_id.id());
-            FromPrimitive::from_i32(status as i32).unwrap()
+            transmute(status)
         }
     }
 
@@ -389,7 +389,6 @@ pub struct AudioDeviceLockGuard<'a, CB: 'a> {
     device: &'a mut AudioDevice<CB>
 }
 
-impl<'a, CB: 'a> !Send for AudioDeviceLockGuard<'a, CB> {}
 
 impl<'a, CB: 'a> Deref for AudioDeviceLockGuard<'a, CB> {
     type Target = CB;
@@ -400,14 +399,13 @@ impl<'a, CB: 'a> DerefMut for AudioDeviceLockGuard<'a, CB> {
     fn deref_mut(&mut self) -> &mut CB { &mut self.device.userdata.callback }
 }
 
-#[unsafe_destructor]
 impl<'a, CB> Drop for AudioDeviceLockGuard<'a, CB> {
     fn drop(&mut self) {
         unsafe { ll::SDL_UnlockAudioDevice(self.device.device_id.id()) }
     }
 }
 
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 pub struct AudioCVT {
     raw: ll::SDL_AudioCVT
 }
@@ -436,13 +434,16 @@ impl AudioCVT {
         //!
         //! The `src` vector is adjusted to the capacity necessary to perform
         //! the conversion in place; then it is passed to the SDL library.
-        use std::num;
+        use std::i32;
         unsafe {
             if self.raw.needed != 0 {
                 let mut raw = self.raw;
 
                 // calculate the size of the dst buffer
-                raw.len = num::cast(src.len()).expect("Buffer length overflow");
+                if src.len() > i32::MAX as usize {
+                    panic!("Buffer length overflow");
+                }
+                raw.len = src.len() as i32;
                 let dst_size = self.get_capacity(src.len());
                 let needed = dst_size - src.len();
                 src.reserve_exact(needed);

@@ -1,5 +1,5 @@
 use std::ffi::{CStr, CString};
-use std::marker::{NoCopy, PhantomData};
+use std::marker::{PhantomData};
 
 use sys::sdl as ll;
 use event::EventPump;
@@ -50,11 +50,8 @@ static IS_SDL_CONTEXT_ALIVE: AtomicBool = ATOMIC_BOOL_INIT;
 /// This guarantees that the only way to call event-pumping functions is on
 /// the main thread.
 pub struct Sdl {
-    _marker: NoCopy
+    _marker: isize
 }
-
-impl !Send for Sdl {}
-impl !Sync for Sdl {}
 
 impl Sdl {
     /// Initializes specific SDL subsystems.
@@ -105,7 +102,6 @@ pub struct Subsystem<'sdl> {
     _marker: PhantomData<&'sdl Sdl>
 }
 
-#[unsafe_destructor]
 impl<'sdl> Drop for Subsystem<'sdl> {
     fn drop(&mut self) {
         unsafe { ll::SDL_QuitSubSystem(self.flags.bits()); }
@@ -139,7 +135,7 @@ pub fn init(flags: InitFlag) -> SdlResult<Sdl> {
         } else {
             if ll::SDL_Init(flags.bits()) == 0 {
                 Ok(Sdl {
-                    _marker: NoCopy
+                    _marker: 0
                 })
             } else {
                 IS_SDL_CONTEXT_ALIVE.swap(false, Ordering::Relaxed);

@@ -1,11 +1,11 @@
 use std::mem;
 use std::path::Path;
+use std::mem::transmute;
 use rect::Rect;
 use get_error;
 use SdlResult;
 use std::ptr;
 use libc::{c_int, uint32_t};
-use std::num::FromPrimitive;
 use pixels;
 use render::BlendMode;
 use rwops;
@@ -288,7 +288,7 @@ impl Surface {
         };
 
         match result {
-            0 => Ok(FromPrimitive::from_i32(mode as i32).unwrap()),
+            0 => Ok(unsafe {transmute(mode as u8)}),
             _ => Err(get_error())
         }
     }

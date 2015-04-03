@@ -2,8 +2,8 @@
 Rectangle Functions
  */
 
-use core::prelude::*;
-use core::intrinsics::transmute;
+use std::prelude::*;
+use std::intrinsics::transmute;
 use libc::c_int;
 
 /// A structure that defines a two dimensional point.
