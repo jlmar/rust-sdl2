@@ -1,15 +1,21 @@
-extern crate "pkg-config" as pkg_config;
+#[cfg(feature="pkg-config")]
+extern crate pkg_config;
 
 fn main() {
-    if std::os::getenv("CARGO_FEATURE_USE_PKGCONFIG").is_some() {
-      if build_pkgconfig() { return; }
-      panic!("Could not find SDL2 via pkgconfig");
-    } else {
+    if !build_pkgconfig() {
       println!("cargo:rustc-flags=-l SDL2");
     }
 }
 
+#[cfg(not(feature="pkg-config"))]
 fn build_pkgconfig() -> bool {
-    let opts = pkg_config::default_options("sdl2");
-    pkg_config::find_library_opts("sdl2", &opts).is_ok()
+    false
+}
+
+#[cfg(feature="pkg-config")]
+fn build_pkgconfig() -> bool {
+    if pkg_config::find_library("sdl2").is_err() {
+        panic!("Could not find SDL2 via pkgconfig");
+    }
+    true
 }

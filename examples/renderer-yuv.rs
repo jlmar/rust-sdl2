@@ -1,6 +1,6 @@
 extern crate sdl2;
 
-use sdl2::video::{Window, WindowPos, OPENGL};
+use sdl2::video::{Window, WindowPos, SHOWN};
 use sdl2::render::{RenderDriverIndex, ACCELERATED, Renderer};
 use sdl2::pixels::PixelFormatEnum;
 use sdl2::rect::Rect;
@@ -9,7 +9,7 @@ use sdl2::keycode::KeyCode;
 pub fn main() {
     let sdl_context = sdl2::init(sdl2::INIT_VIDEO).unwrap();
 
-    let window = match Window::new("rust-sdl2 demo: Renderer + Texture", WindowPos::PosCentered, WindowPos::PosCentered, 800, 600, OPENGL) {
+    let window = match Window::new("rust-sdl2 demo: YUV", WindowPos::PosCentered, WindowPos::PosCentered, 800, 600, SHOWN) {
         Ok(window) => window,
         Err(err) => panic!("failed to create window: {}", err)
     };
@@ -19,15 +19,32 @@ pub fn main() {
         Err(err) => panic!("failed to create renderer: {}", err)
     };
 
-    let mut texture = renderer.create_texture_streaming(PixelFormatEnum::RGB24, (256, 256)).unwrap();
-    // Create a red-green gradient
+    let mut texture = renderer.create_texture_streaming(PixelFormatEnum::IYUV, (256, 256)).unwrap();
+    // Create a U-V gradient
     texture.with_lock(None, |buffer: &mut [u8], pitch: usize| {
-        for y in (0..256) {
-            for x in (0..256) {
-                let offset = y*pitch + x*3;
-                buffer[offset + 0] = x as u8;
-                buffer[offset + 1] = y as u8;
-                buffer[offset + 2] = 0;
+        // `pitch` is the width of the Y component
+        // The U and V components are half the width and height of Y
+
+        let w = 256;
+        let h = 256;
+
+        // Set Y (constant)
+        for y in 0..h {
+            for x in 0..w {
+                let offset = y*pitch + x;
+                buffer[offset] = 128;
+            }
+        }
+
+        let y_size = pitch*h;
+
+        // Set U and V (X and Y)
+        for y in 0..h/2 {
+            for x in 0..w/2 {
+                let u_offset = y_size + y*pitch/2 + x;
+                let v_offset = y_size + (pitch/2 * h/2) + y*pitch/2 + x;
+                buffer[u_offset] = (x*2) as u8;
+                buffer[v_offset] = (y*2) as u8;
             }
         }
     }).unwrap();
@@ -35,7 +52,6 @@ pub fn main() {
     let mut drawer = renderer.drawer();
     drawer.clear();
     drawer.copy(&texture, None, Some(Rect::new(100, 100, 256, 256)));
-    drawer.copy_ex(&texture, None, Some(Rect::new(450, 100, 256, 256)), 30.0, None, (false, false));
     drawer.present();
 
     let mut running = true;

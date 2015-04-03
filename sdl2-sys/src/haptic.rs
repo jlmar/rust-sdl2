@@ -1,4 +1,5 @@
 use joystick::SDL_Joystick;
+use core::prelude::*;
 use libc::{c_int, c_uint, c_char, c_float, c_void, int16_t, int32_t, uint8_t, uint16_t, uint32_t};
 
 pub const SDL_HAPTIC_CONSTANT: uint16_t = 1 << 0;
@@ -126,7 +127,7 @@ pub struct SDL_HapticCustom {
 #[allow(missing_copy_implementations)]
 #[repr(C)]
 pub struct SDL_HapticEffect {
-    pub data: [uint8_t; 72us],
+    pub data: [uint8_t; 72],
 }
 
 impl SDL_HapticEffect {
@@ -191,4 +192,3 @@ extern "C" {
     pub fn SDL_HapticRumblePlay(haptic: *const SDL_Haptic, strength: c_float, length: uint32_t) -> c_int;
     pub fn SDL_HapticRumbleStop(haptic: *const SDL_Haptic) -> c_int;
 }
-

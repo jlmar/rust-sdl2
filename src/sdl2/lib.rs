@@ -1,13 +1,12 @@
 #![crate_name = "sdl2"]
 #![crate_type = "lib"]
 
-#![feature(slicing_syntax, unsafe_destructor)]
+#![feature(unsafe_destructor, optin_builtin_traits, std_misc, core)]
 
 extern crate libc;
-extern crate collections;
 #[macro_use]
 extern crate bitflags;
-extern crate "sdl2-sys" as sys;
+extern crate sdl2_sys as sys;
 
 pub use sdl::*;
 

@@ -2,11 +2,12 @@
 Rectangle Functions
  */
 
-use std::mem;
+use core::prelude::*;
+use core::intrinsics::transmute;
 use libc::c_int;
 
 /// A structure that defines a two dimensional point.
-#[derive(PartialEq, Clone, Show, Copy)]
+#[derive(PartialEq, Clone, Debug, Copy)]
 #[repr(C)]
 pub struct Point {
     pub x: i32,
@@ -14,7 +15,7 @@ pub struct Point {
 }
 
 /// A structure that defines a rectangle, with the origin at the upper left.
-#[derive(PartialEq, Clone, Show, Copy)]
+#[derive(PartialEq, Clone, Debug, Copy)]
 #[repr(C)]
 pub struct Rect {
     pub x: i32,
@@ -71,7 +72,7 @@ impl Rect {
             ll::SDL_EnclosePoints(
                 points.as_ptr(),
                 points.len() as c_int,
-                mem::transmute(clip.as_ref()),
+                transmute(clip.as_ref()),
                 &out
             ) != 0
         };

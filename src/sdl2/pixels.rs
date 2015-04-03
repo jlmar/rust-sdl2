@@ -62,7 +62,7 @@ pub struct PixelFormat {
 impl_raw_accessors!((PixelFormat, *const ll::SDL_PixelFormat));
 impl_raw_constructor!((PixelFormat, PixelFormat (raw: *const ll::SDL_PixelFormat)));
 
-#[derive(Copy, Clone, PartialEq, Show, FromPrimitive)]
+#[derive(Copy, Clone, PartialEq, Debug, FromPrimitive)]
 pub enum PixelFormatEnum {
     Unknown = ll::SDL_PIXELFORMAT_UNKNOWN as isize,
     Index1LSB = ll::SDL_PIXELFORMAT_INDEX1LSB as isize,
@@ -103,6 +103,21 @@ pub enum PixelFormatEnum {
 }
 
 impl PixelFormatEnum {
+    /// Calculates the total byte size of an image buffer, given its pitch
+    /// and height.
+    pub fn byte_size_from_pitch_and_height(&self, pitch: usize, height: usize) -> usize {
+        match *self {
+            PixelFormatEnum::YV12 | PixelFormatEnum::IYUV => {
+                // YUV is 4:2:0.
+                // `pitch` is the width of the Y component, and
+                // `height` is the height of the Y component.
+                // U and V have half the width and height of Y.
+                pitch * height + 2 * (pitch / 2 * height / 2)
+            },
+            _ => pitch * height
+        }
+    }
+
     pub fn byte_size_of_pixels(&self, num_of_pixels: usize) -> usize {
         match *self {
             PixelFormatEnum::RGB332

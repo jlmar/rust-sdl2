@@ -1,3 +1,4 @@
+use core::prelude::*;
 use libc::{c_int, c_char, c_uchar, c_uint, c_void, int16_t, uint8_t};
 use joystick::{SDL_Joystick, SDL_JoystickGUID};
 
@@ -23,7 +24,7 @@ pub struct SDL_GameControllerButtonBind {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SDL_GameControllerButtonBindData {
-    data: [c_uchar; 8us],
+    data: [c_uchar; 8],
 }
 
 #[allow(dead_code)]

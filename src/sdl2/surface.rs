@@ -1,4 +1,5 @@
 use std::mem;
+use std::path::Path;
 use rect::Rect;
 use get_error;
 use SdlResult;
@@ -114,7 +115,7 @@ impl Surface {
 
             let raw_pixels = (*self.raw).pixels as *mut _;
             let len = (*self.raw).pitch as usize * ((*self.raw).h as usize);
-            let pixels = ::std::slice::from_raw_mut_buf(&raw_pixels, len);
+            let pixels = ::std::slice::from_raw_parts_mut(raw_pixels, len);
             let rv = f(pixels);
             ll::SDL_UnlockSurface(self.raw);
             rv
@@ -353,6 +354,20 @@ impl Surface {
         }
     }
 
+    pub fn blit_scaled(&self, src_rect: Option<Rect>,
+                             dst: &mut Surface, dst_rect: Option<Rect>) -> SdlResult<()> {
+
+        match unsafe {
+            let src_rect_ptr = mem::transmute(src_rect.as_ref());
+            let dst_rect_ptr = mem::transmute(dst_rect.as_ref());
+            ll::SDL_UpperBlitScaled(self.raw, src_rect_ptr, dst.raw, dst_rect_ptr)
+        } {
+            0 => Ok(()),
+            _ => Err(get_error())
+        }
+    }
+
+    #[deprecated]
     pub fn upper_blit_scaled(&self, src_rect: Option<Rect>,
                              dst: &mut Surface, dst_rect: Option<Rect>) -> SdlResult<()> {
 

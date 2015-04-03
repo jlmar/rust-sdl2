@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::ffi::{c_str_to_bytes, CString};
+use std::ffi::{CStr, CString, NulError};
 use std::num::FromPrimitive;
 use std::ptr;
 
@@ -41,12 +41,13 @@ pub fn get_keyboard_state() -> HashMap<ScanCode, bool> {
     let mut state: HashMap<ScanCode, bool> = HashMap::new();
     let count = 0;
 
-    let raw = unsafe { Vec::from_raw_buf(ll::SDL_GetKeyboardState(&count),
+    let state_ptr = unsafe { ll::SDL_GetKeyboardState(&count) };
+    let raw = unsafe { ::std::slice::from_raw_parts(state_ptr,
                                           count as usize) };
 
     let mut current = 0;
     while current < raw.len() {
-        state.insert(FromPrimitive::from_int(current as isize)
+        state.insert(FromPrimitive::from_isize(current as isize)
                         .unwrap_or(ScanCode::Unknown),
                      raw[current] == 1);
         current += 1;
@@ -65,14 +66,14 @@ pub fn set_mod_state(flags: Mod) {
 
 pub fn get_key_from_scancode(scancode: ScanCode) -> KeyCode {
     unsafe {
-        FromPrimitive::from_int(ll::SDL_GetKeyFromScancode(scancode as u32) as isize)
+        FromPrimitive::from_isize(ll::SDL_GetKeyFromScancode(scancode as u32) as isize)
             .unwrap_or(KeyCode::Unknown)
     }
 }
 
 pub fn get_scancode_from_key(key: KeyCode) -> ScanCode {
     unsafe {
-        FromPrimitive::from_int(ll::SDL_GetScancodeFromKey(key as i32) as isize)
+        FromPrimitive::from_isize(ll::SDL_GetScancodeFromKey(key as i32) as isize)
             .unwrap_or(ScanCode::Unknown)
     }
 }
@@ -80,30 +81,38 @@ pub fn get_scancode_from_key(key: KeyCode) -> ScanCode {
 pub fn get_scancode_name(scancode: ScanCode) -> String {
     unsafe {
         let scancode_name = ll::SDL_GetScancodeName(scancode as u32);
-        String::from_utf8_lossy(c_str_to_bytes(&scancode_name)).to_string()
+        String::from_utf8_lossy(CStr::from_ptr(scancode_name).to_bytes()).into_owned()
     }
 }
 
-pub fn get_scancode_from_name(name: &str) -> ScanCode {
+pub fn get_scancode_from_name(name: &str) -> Result<ScanCode, NulError> {
     unsafe {
-        let name = CString::from_slice(name.as_bytes()).as_ptr();
-        FromPrimitive::from_int(ll::SDL_GetScancodeFromName(name) as isize)
-            .unwrap_or(ScanCode::Unknown)
+        let name =
+        match CString::new(name) {
+            Ok(s) => s.as_ptr(),
+            Err(e) => return Err(e),
+        };
+        Ok(FromPrimitive::from_isize(ll::SDL_GetScancodeFromName(name) as isize)
+            .unwrap_or(ScanCode::Unknown))
     }
 }
 
 pub fn get_key_name(key: KeyCode) -> String {
     unsafe {
         let key_name = ll::SDL_GetKeyName(key as i32);
-        String::from_utf8_lossy(c_str_to_bytes(&key_name)).to_string()
+        String::from_utf8_lossy(CStr::from_ptr(key_name).to_bytes()).to_string()
     }
 }
 
-pub fn get_key_from_name(name: &str) -> KeyCode {
+pub fn get_key_from_name(name: &str) -> Result<KeyCode, NulError> {
     unsafe {
-        let name = CString::from_slice(name.as_bytes()).as_ptr();
-        FromPrimitive::from_int(ll::SDL_GetKeyFromName(name) as isize)
-            .unwrap_or(KeyCode::Unknown)
+        let name =
+        match CString::new(name) {
+            Ok(s) => s.as_ptr(),
+            Err(e) => return Err(e),
+        };
+        Ok(FromPrimitive::from_isize(ll::SDL_GetKeyFromName(name) as isize)
+            .unwrap_or(KeyCode::Unknown))
     }
 }
 

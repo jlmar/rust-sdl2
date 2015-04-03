@@ -1,3 +1,4 @@
+use core::prelude::*;
 use libc::{c_int, c_uint, c_void, uint8_t, uint32_t};
 use libc::{uint16_t, c_double, c_char};
 use super::rwops::SDL_RWops;
@@ -24,9 +25,7 @@ pub const AUDIO_S32SYS : SDL_AudioFormat =     AUDIO_S32LSB;
 pub const AUDIO_F32SYS : SDL_AudioFormat =     AUDIO_F32LSB;
 
 pub type SDL_AudioCallback =
-    ::std::option::Option<extern "C" fn
-                              (arg1: *const c_void, arg2: *const uint8_t,
-                               arg3: c_int)>;
+    Option<extern "C" fn (arg1: *mut c_void, arg2: *mut uint8_t, arg3: c_int)>;
 #[allow(missing_copy_implementations)]
 #[repr(C)]
 pub struct SDL_AudioSpec {
@@ -41,10 +40,9 @@ pub struct SDL_AudioSpec {
     pub userdata: *const c_void,
 }
 pub type SDL_AudioFilter =
-    ::std::option::Option<extern "C" fn
-                              (arg1: *const SDL_AudioCVT,
-                               arg2: SDL_AudioFormat)>;
-#[allow(dead_code, missing_copy_implementations)]
+    Option<extern "C" fn (arg1: *const SDL_AudioCVT, arg2: SDL_AudioFormat)>;
+#[allow(dead_code, missing_copy_implementations, raw_pointer_derive)]
+#[derive(Copy)]
 #[repr(C)]
 pub struct SDL_AudioCVT {
     pub needed: c_int,
@@ -56,7 +54,7 @@ pub struct SDL_AudioCVT {
     pub len_cvt: c_int,
     pub len_mult: c_int,
     pub len_ratio: c_double,
-    filters: [SDL_AudioFilter; 10us],
+    filters: [SDL_AudioFilter; 10],
     filter_index: c_int,
 }
 pub type SDL_AudioDeviceID = uint32_t;

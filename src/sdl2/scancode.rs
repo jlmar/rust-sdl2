@@ -1,9 +1,9 @@
-use std::hash::{self, Hash};
+use std::hash::{Hash, Hasher};
 use std::num::ToPrimitive;
 
 use sys::scancode as ll;
 
-#[derive(PartialEq, Eq, FromPrimitive, Show, Copy)]
+#[derive(PartialEq, Eq, FromPrimitive, Debug, Copy)]
 pub enum ScanCode {
     Unknown            = ll::SDL_SCANCODE_UNKNOWN as isize,
     A                  = ll::SDL_SCANCODE_A as isize,
@@ -249,9 +249,9 @@ pub enum ScanCode {
     Num                = ll::SDL_NUM_SCANCODES as isize,
 }
 
-impl<S: hash::Hasher + hash::Writer> Hash<S> for ScanCode {
+impl Hash for ScanCode {
     #[inline]
-    fn hash(&self, state: &mut S) {
+    fn hash<H>(&self, state: &mut H) where H: Hasher {
         (*self as i32).hash(state);
     }
 }
